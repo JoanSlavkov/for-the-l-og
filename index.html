@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wolt Restaurant Scraper</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <h1>Wolt Restaurant Scraper</h1>
+
+    <div class="theme-switcher">
+      <label class="switch">
+        <input type="checkbox" id="themeToggle">
+        <span class="slider round"></span>
+      </label>
+      <span id="themeLabel">Light Mode</span>
+    </div>
+
+    <div class="input-group">
+      <label>Paste Wolt Restaurant URL</label>
+      <input id="urlInput" placeholder="https://wolt.com/...">
+      <div class="input-buttons">
+        <button id="loadBtn">Load Restaurant</button>
+        <button id="clearBtn">Clear</button>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="copyBtn">Copy All</button>
+    </div>
+
+    <div id="outputContainer" class="output-container"></div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
