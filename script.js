@@ -4,8 +4,9 @@ const clearBtn = document.getElementById("clearBtn");
 const outputContainer = document.getElementById("outputContainer");
 const themeToggle = document.getElementById("themeToggle");
 const themeLabel = document.getElementById("themeLabel");
+const exportBtn = document.getElementById("exportBtn");
 
-const PROXY_BASE = "/fetch?"; // works because front-end and proxy are on same Render app
+const PROXY_BASE = "/fetch?";
 const FALLBACK_IMAGE = "https://via.placeholder.com/100?text=No+Image";
 
 let allItems = [];
@@ -24,15 +25,15 @@ function extractItemsFromHTML(html) {
   const doc = parser.parseFromString(html, "text/html");
   const items = [];
 
-  // Extract categories (stable selector)
+  // Extract categories
   allCategories = Array.from(doc.querySelectorAll('h2'))
     .map(el => el.textContent.trim())
     .filter(Boolean);
   allCategories = [...new Set(allCategories)];
 
-  // Extract dish cards using stable data-test-id
+  // Extract dish cards
   const dishNodes = Array.from(doc.querySelectorAll('[data-test-id="horizontal-item-card"]'));
-  console.log('Found dishes:', dishNodes.length); // debug
+  console.log('Found dishes:', dishNodes.length);
 
   dishNodes.forEach(dish => {
     const name = dish.querySelector('[data-test-id="horizontal-item-card-header"]')?.textContent.trim() || "(no name)";
@@ -69,7 +70,7 @@ function displayItems(items) {
     { label: "Image URL", key: "imgUrl" }
   ];
 
-  // Header row with copy buttons
+  // Header row + copy buttons
   const headerRow = document.createElement("tr");
   headers.forEach(h => {
     const th = document.createElement("th");
@@ -91,13 +92,12 @@ function displayItems(items) {
   });
   table.appendChild(headerRow);
 
-  // Categories row (displayed in first column)
+  // Categories row (all categories combined)
   if (allCategories.length) {
     const catRow = document.createElement("tr");
     headers.forEach(h => {
       const td = document.createElement("td");
       if (h.key === "categories") td.textContent = allCategories.join("\n");
-      else td.textContent = "";
       catRow.appendChild(td);
     });
     table.appendChild(catRow);
@@ -108,8 +108,10 @@ function displayItems(items) {
     const row = document.createElement("tr");
     headers.forEach(h => {
       const td = document.createElement("td");
-      if (h.key === "categories") td.textContent = "";
-      else if (h.key === "imgUrl") {
+
+      if (h.key === "categories") {
+        td.textContent = "";
+      } else if (h.key === "imgUrl") {
         const link = document.createElement("a");
         link.href = item.imgUrl;
         link.target = "_blank";
@@ -120,6 +122,7 @@ function displayItems(items) {
       } else {
         td.textContent = item[h.key] || "";
       }
+
       row.appendChild(td);
     });
     table.appendChild(row);
@@ -144,7 +147,7 @@ function copyColumn(columnKey) {
     .catch(err => alert("Copy failed: " + err));
 }
 
-/* ---------- BUTTONS ---------- */
+/* ---------- LOAD BUTTON ---------- */
 loadBtn.addEventListener("click", async () => {
   let url = urlInput.value.trim();
   if (!url) return alert("Paste a Wolt restaurant URL first.");
@@ -161,6 +164,7 @@ loadBtn.addEventListener("click", async () => {
   }
 });
 
+/* ---------- CLEAR BUTTON ---------- */
 clearBtn.addEventListener("click", () => {
   urlInput.value = "";
   outputContainer.innerHTML = "";
@@ -182,3 +186,48 @@ window.addEventListener("DOMContentLoaded", () => {
   const savedTheme = localStorage.getItem("theme");
   applyTheme(savedTheme === "light");
 });
+
+/* ----------------------------------------------------------
+   ✅ EXCEL EXPORT (XLSX) — Categories in separate cells
+-----------------------------------------------------------*/
+
+// Load XLSX library
+document.body.appendChild(Object.assign(document.createElement("script"), {
+  src: "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"
+}));
+
+exportBtn.addEventListener("click", () => {
+  if (!allItems.length && !allCategories.length) {
+    alert("No data to export.");
+    return;
+  }
+
+  const worksheetData = [];
+
+  // Header row
+  worksheetData.push(["Categories", "Dish Name", "Description", "Price", "Image URL"]);
+
+  // Categories: each category gets its own cell in column A
+  allCategories.forEach(cat => {
+    worksheetData.push([cat, "", "", "", ""]);
+  });
+
+  // Dish rows
+  allItems.forEach(item => {
+    worksheetData.push([
+      "", // empty category cell for dish rows
+      item.name,
+      item.description,
+      (item.price || "").replace(",", "."),
+      item.imgUrl
+    ]);
+  });
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+
+  XLSX.utils.book_append_sheet(wb, ws, "Wolt Data");
+  XLSX.writeFile(wb, "wolt_export.xlsx");
+});
+
+
